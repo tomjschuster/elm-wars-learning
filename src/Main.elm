@@ -1,8 +1,22 @@
-module Main exposing (..)
+module Main exposing (main)
 
 import Browser
-import Html exposing (Html, div, h1, img, text)
-import Html.Attributes exposing (src)
+import Html
+    exposing
+        ( Html
+        , button
+        , div
+        , h1
+        , img
+        , input
+        , label
+        , li
+        , p
+        , text
+        , ul
+        )
+import Html.Attributes exposing (src, type_, value)
+import Html.Events exposing (onClick, onInput)
 import Http
 import Json.Decode as JD
 import Url.Builder
@@ -45,7 +59,9 @@ personDecoder =
     JD.map5 Person
         (JD.field "url" JD.string)
         (JD.field "name" JD.string)
-        (JD.field "height" JD.int)
+        (JD.field "height"
+            (JD.andThen (String.toInt >> failOnNothing) JD.string)
+        )
         (JD.field "eye_color" (JD.map eyeColorFromString JD.string))
         (JD.field "homeworld" JD.string)
 
@@ -71,6 +87,32 @@ eyeColorFromString eyeColor =
 
         _ ->
             Other
+
+
+eyeColorToString : EyeColor -> String
+eyeColorToString eyeColor =
+    case eyeColor of
+        Blue ->
+            "Blue"
+
+        Brown ->
+            "Brown"
+
+        Green ->
+            "Green"
+
+        Other ->
+            "Other"
+
+
+failOnNothing : Maybe a -> JD.Decoder a
+failOnNothing maybe =
+    case maybe of
+        Just a ->
+            JD.succeed a
+
+        Nothing ->
+            JD.fail "Nothing"
 
 
 
@@ -136,8 +178,34 @@ searchPeople searchText =
 view : Model -> Html Msg
 view model =
     div []
-        [ img [ src "/logo.svg" ] []
-        , h1 [] [ text "Your Elm App is working!" ]
+        [ h1 [] [ text "Elm Wars!" ]
+        , button [ onClick SearchPeople ] [ text "Search: " ]
+        , input
+            [ type_ "text"
+            , value model.searchText
+            , onInput InputSearchText
+            ]
+            []
+        , viewResults model.error model.people
+        ]
+
+
+viewResults : Maybe String -> List Person -> Html Msg
+viewResults error people =
+    case error of
+        Just message ->
+            p [] [ text message ]
+
+        Nothing ->
+            ul [] (List.map personItem people)
+
+
+personItem : Person -> Html Msg
+personItem person =
+    li []
+        [ p [] [ text ("Name: " ++ person.name) ]
+        , p [] [ text ("Height: " ++ String.fromInt person.height) ]
+        , p [] [ text ("Eye Color: " ++ eyeColorToString person.eyeColor) ]
         ]
 
 
