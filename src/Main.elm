@@ -4,6 +4,7 @@ import Browser
 import Html exposing (Html, div, h1, img, text)
 import Html.Attributes exposing (src)
 import Http
+import Json.Decode as JD
 import Url.Builder
 
 
@@ -35,8 +36,18 @@ type alias Person =
     , name : String
     , height : Int
     , eyeColor : EyeColor
-    , homeworld : Planet
+    , homeworldUrl : String
     }
+
+
+personDecoder : JD.Decoder Person
+personDecoder =
+    JD.map5 Person
+        (JD.field "url" JD.string)
+        (JD.field "name" JD.string)
+        (JD.field "height" JD.int)
+        (JD.field "eye_color" (JD.map eyeColorFromString JD.string))
+        (JD.field "homeworld" JD.string)
 
 
 type EyeColor
@@ -46,11 +57,20 @@ type EyeColor
     | Other
 
 
-type alias Planet =
-    { url : String
-    , name : String
-    , population : Int
-    }
+eyeColorFromString : String -> EyeColor
+eyeColorFromString eyeColor =
+    case eyeColor of
+        "Blue" ->
+            Blue
+
+        "Brown" ->
+            Brown
+
+        "Green" ->
+            Green
+
+        _ ->
+            Other
 
 
 
@@ -61,7 +81,7 @@ type Msg
     = NoOp
     | InputSearchText String
     | SearchPeople
-    | PeopleSearched (Result Http.Error ())
+    | PeopleSearched (Result Http.Error (List Person))
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -76,8 +96,8 @@ update msg model =
         SearchPeople ->
             ( model, searchPeople model.searchText )
 
-        PeopleSearched (Ok ()) ->
-            ( { model | error = Nothing }, Cmd.none )
+        PeopleSearched (Ok people) ->
+            ( { model | people = people, error = Nothing }, Cmd.none )
 
         PeopleSearched (Err err) ->
             ( { model | error = Just (Debug.toString err) }, Cmd.none )
@@ -103,7 +123,9 @@ searchPeople : String -> Cmd Msg
 searchPeople searchText =
     Http.get
         { url = searchPeopleUrl searchText
-        , expect = Http.expectWhatever PeopleSearched
+        , expect =
+            Http.expectJson PeopleSearched
+                (JD.field "results" (JD.list personDecoder))
         }
 
 
