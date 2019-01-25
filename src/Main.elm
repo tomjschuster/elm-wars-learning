@@ -112,7 +112,7 @@ view model =
         , button [ onClick GoToPeople ]
             [ text "People" ]
         , button [ onClick GoToPlanets ]
-            [ text "Plane" ]
+            [ text "Planets" ]
         , viewPage model.page
         ]
 
