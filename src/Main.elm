@@ -3,13 +3,18 @@ module Main exposing (..)
 import Browser
 import Html exposing (Html, div, h1, img, text)
 import Html.Attributes exposing (src)
+import Http
+import Url.Builder
 
 
 ---- MODEL ----
 
 
 type alias Model =
-    { people : List Person, searchText : String }
+    { people : List Person
+    , searchText : String
+    , error : Maybe String
+    }
 
 
 init : ( Model, Cmd Msg )
@@ -19,7 +24,10 @@ init =
 
 initialModel : Model
 initialModel =
-    { people = [], searchText = "" }
+    { people = []
+    , searchText = ""
+    , error = Nothing
+    }
 
 
 type alias Person =
@@ -51,11 +59,52 @@ type alias Planet =
 
 type Msg
     = NoOp
+    | InputSearchText String
+    | SearchPeople
+    | PeopleSearched (Result Http.Error ())
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
-    ( model, Cmd.none )
+    case msg of
+        NoOp ->
+            ( model, Cmd.none )
+
+        InputSearchText searchText ->
+            ( { model | searchText = searchText }, Cmd.none )
+
+        SearchPeople ->
+            ( model, searchPeople model.searchText )
+
+        PeopleSearched (Ok ()) ->
+            ( { model | error = Nothing }, Cmd.none )
+
+        PeopleSearched (Err err) ->
+            ( { model | error = Just (Debug.toString err) }, Cmd.none )
+
+
+
+-- Requests
+
+
+baseApi : String
+baseApi =
+    "https://swapi.co/api"
+
+
+searchPeopleUrl : String -> String
+searchPeopleUrl searchText =
+    Url.Builder.crossOrigin baseApi
+        [ "people" ]
+        [ Url.Builder.string "name" searchText ]
+
+
+searchPeople : String -> Cmd Msg
+searchPeople searchText =
+    Http.get
+        { url = searchPeopleUrl searchText
+        , expect = Http.expectWhatever PeopleSearched
+        }
 
 
 
