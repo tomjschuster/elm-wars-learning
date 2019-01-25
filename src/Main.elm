@@ -1,7 +1,7 @@
 module Main exposing (..)
 
 import Browser
-import Html exposing (Html, text, div, h1, img)
+import Html exposing (Html, div, h1, img, text)
 import Html.Attributes exposing (src)
 
 
@@ -9,12 +9,40 @@ import Html.Attributes exposing (src)
 
 
 type alias Model =
-    {}
+    { people : List Person, searchText : String }
 
 
 init : ( Model, Cmd Msg )
 init =
-    ( {}, Cmd.none )
+    ( initialModel, Cmd.none )
+
+
+initialModel : Model
+initialModel =
+    { people = [], searchText = "" }
+
+
+type alias Person =
+    { url : String
+    , name : String
+    , height : Int
+    , eyeColor : EyeColor
+    , homeworld : Planet
+    }
+
+
+type EyeColor
+    = Blue
+    | Brown
+    | Green
+    | Other
+
+
+type alias Planet =
+    { url : String
+    , name : String
+    , population : Int
+    }
 
 
 
